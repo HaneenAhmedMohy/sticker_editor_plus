@@ -47,8 +47,7 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
     setState(() {
       // Handle rotation
       if (details.rotation != 0) {
-        widget.pictureModel.angle += details.rotation - _lastRotation;
-        _lastRotation = details.rotation;
+        widget.pictureModel.angle += details.rotation;
       }
 
       // Handle scaling
@@ -58,10 +57,10 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
       }
 
       // Handle movement
-      final newLeft =
-          (widget.pictureModel.left + details.focalPointDelta.dx).clamp(0.0, widget.boundWidth - 50 * widget.pictureModel.scale);
-      final newTop =
-          (widget.pictureModel.top + details.focalPointDelta.dy).clamp(0.0, widget.boundHeight - 50 * widget.pictureModel.scale);
+      final newLeft = (widget.pictureModel.left + details.focalPointDelta.dx)
+          .clamp(0.0, widget.boundWidth - 50 * widget.pictureModel.scale);
+      final newTop = (widget.pictureModel.top + details.focalPointDelta.dy)
+          .clamp(0.0, widget.boundHeight - 50 * widget.pictureModel.scale);
 
       widget.pictureModel.left = newLeft;
       widget.pictureModel.top = newTop;
@@ -70,7 +69,6 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
 
   void _handleScaleEnd(ScaleEndDetails details) {
     _lastScale = widget.pictureModel.scale;
-    _lastRotation = 0;
   }
 
   @override
@@ -78,35 +76,30 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
     return Positioned(
       top: widget.pictureModel.top,
       left: widget.pictureModel.left,
-      child: Transform.scale(
-        scale: widget.pictureModel.scale,
-        child: Transform.rotate(
-          angle: widget.pictureModel.angle,
-          child: GestureDetector(
-            onScaleStart: (_) => _lastRotation = 0,
-            onScaleUpdate: _handleScaleUpdate,
-            onScaleEnd: _handleScaleEnd,
-            onTap: () {
-              if (widget.onTap != null) {
-                widget.onTap!();
-              } else {
-                setState(() => widget.pictureModel.isSelected = !widget.pictureModel.isSelected);
-              }
-            },
-            child: Container(
-              width: 50,
-              height: 50,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  _buildStickerImage(),
-                  if (widget.pictureModel.isSelected) ...[
-                    _buildRotateHandle(),
-                    _buildCloseButton(),
-                    _buildResizeHandle(),
-                  ],
+      child: GestureDetector(
+        onScaleStart: (_) => _lastScale = widget.pictureModel.scale,
+        onScaleUpdate: _handleScaleUpdate,
+        onScaleEnd: _handleScaleEnd,
+        onTap: () {
+          if (widget.onTap != null) {
+            widget.onTap!();
+          } else {
+            setState(() => widget.pictureModel.isSelected = !widget.pictureModel.isSelected);
+          }
+        },
+        child: Transform.scale(
+          scale: widget.pictureModel.scale,
+          child: Transform.rotate(
+            angle: widget.pictureModel.angle,
+            child: Stack(
+              children: [
+                _buildStickerImage(),
+                if (widget.pictureModel.isSelected && !widget.viewOnly) ...[
+                  _buildRotateHandle(),
+                  _buildCloseButton(),
+                  _buildResizeHandle(),
                 ],
-              ),
+              ],
             ),
           ),
         ),
@@ -121,8 +114,8 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
         color: widget.pictureModel.isSelected ? Colors.grey[600]! : Colors.transparent,
         padding: const EdgeInsets.all(4),
         child: widget.pictureModel.stringUrl.startsWith('http')
-            ? Image.network(widget.pictureModel.stringUrl, height: 50, width: 50)
-            : Image.asset(widget.pictureModel.stringUrl, height: 50, width: 50),
+            ? Image.network(widget.pictureModel.stringUrl, height: 50, width: 50, fit: BoxFit.contain)
+            : Image.asset(widget.pictureModel.stringUrl, height: 50, width: 50, fit: BoxFit.contain),
       ),
     );
   }
@@ -133,16 +126,18 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
       left: 0,
       child: GestureDetector(
         onPanUpdate: (details) {
-          setState(() => widget.pictureModel.angle += details.delta.dx * 0.01);
+          final center = Offset(25 * widget.pictureModel.scale, 25 * widget.pictureModel.scale);
+          final angle = (details.localPosition - center).direction;
+          setState(() => widget.pictureModel.angle = angle);
         },
         child: Container(
-          padding: const EdgeInsets.all(2),
+          padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
             border: Border.all(color: Colors.black, width: 1),
             shape: BoxShape.circle,
             color: Colors.white,
           ),
-          child: widget.rotateIcon ?? const Icon(Icons.sync_alt, color: Colors.black, size: 12),
+          child: widget.rotateIcon ?? const Icon(Icons.sync_alt, color: Colors.black, size: 16),
         ),
       ),
     );
@@ -150,8 +145,8 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
 
   Widget _buildCloseButton() {
     return Positioned(
-      top: 3,
-      right: 3,
+      top: 0,
+      right: 0,
       child: GestureDetector(
         onTap: () {
           if (widget.onCancel != null) {
@@ -160,13 +155,13 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
           setState(() => widget.pictureModel.isSelected = false);
         },
         child: Container(
-          padding: const EdgeInsets.all(2),
+          padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
             border: Border.all(color: Colors.black, width: 1),
             shape: BoxShape.circle,
             color: Colors.white,
           ),
-          child: widget.closeIcon ?? const Icon(Icons.close, color: Colors.black, size: 12),
+          child: widget.closeIcon ?? const Icon(Icons.close, color: Colors.black, size: 16),
         ),
       ),
     );
@@ -174,23 +169,24 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
 
   Widget _buildResizeHandle() {
     return Positioned(
-      bottom: 3,
-      right: 3,
+      bottom: 0,
+      right: 0,
       child: GestureDetector(
         onPanUpdate: (details) {
+          final changeScale = details.delta.distance / 100;
           setState(() {
-            final newScale = (widget.pictureModel.scale + details.delta.dx * 0.01).clamp(0.5, 5.0);
+            final newScale = (widget.pictureModel.scale + changeScale).clamp(0.5, 5.0);
             widget.pictureModel.scale = newScale;
           });
         },
         child: Container(
-          padding: const EdgeInsets.all(2),
+          padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
             border: Border.all(color: Colors.black, width: 1),
             color: Colors.white,
             shape: BoxShape.circle,
           ),
-          child: widget.resizeIcon ?? const Icon(Icons.crop, color: Colors.black, size: 12),
+          child: widget.resizeIcon ?? const Icon(Icons.crop, color: Colors.black, size: 16),
         ),
       ),
     );
