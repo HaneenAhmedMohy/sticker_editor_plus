@@ -90,20 +90,11 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
 
                   // widget.pictureModel.scale = tap.scale;
                 }
-                if (tap.rotation != 0) {
-                  widget.pictureModel.angle += tap.rotation;
-                }
-
-                // Handle scaling
-                if (tap.scale != 1 && lastScale != null) {
-                  final newScale = (lastScale! * tap.scale).clamp(0.5, 5.0);
-                  widget.pictureModel.scale = newScale;
-                }
 
                 final newLeft = (widget.pictureModel.left + tap.focalPointDelta.dx)
-                    .clamp(0.0, widget.boundWidth - 50 * widget.pictureModel.scale);
+                    .clamp(0.0, widget.boundWidth - 50 );
                 final newTop = (widget.pictureModel.top + tap.focalPointDelta.dy)
-                    .clamp(0.0, widget.boundHeight - 50 * widget.pictureModel.scale);
+                    .clamp(0.0, widget.boundHeight - 50);
 
                 widget.pictureModel.left = newLeft;
                 widget.pictureModel.top = newTop;
