@@ -78,30 +78,35 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
     return Positioned(
       top: widget.pictureModel.top,
       left: widget.pictureModel.left,
-      child: GestureDetector(
-        onScaleStart: (_) => _lastRotation = 0,
-        onScaleUpdate: _handleScaleUpdate,
-        onScaleEnd: _handleScaleEnd,
-        onTap: () {
-          if (widget.onTap != null) {
-            widget.onTap!();
-          } else {
-            setState(() => widget.pictureModel.isSelected = !widget.pictureModel.isSelected);
-          }
-        },
-        child: Transform.scale(
-          scale: widget.pictureModel.scale,
-          child: Transform.rotate(
-            angle: widget.pictureModel.angle,
-            child: Stack(
-              children: [
-                _buildStickerImage(),
-                if (widget.pictureModel.isSelected) ...[
-                  _buildRotateHandle(),
-                  _buildCloseButton(),
-                  _buildResizeHandle(),
+      child: Transform.scale(
+        scale: widget.pictureModel.scale,
+        child: Transform.rotate(
+          angle: widget.pictureModel.angle,
+          child: GestureDetector(
+            onScaleStart: (_) => _lastRotation = 0,
+            onScaleUpdate: _handleScaleUpdate,
+            onScaleEnd: _handleScaleEnd,
+            onTap: () {
+              if (widget.onTap != null) {
+                widget.onTap!();
+              } else {
+                setState(() => widget.pictureModel.isSelected = !widget.pictureModel.isSelected);
+              }
+            },
+            child: Container(
+              width: 50,
+              height: 50,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  _buildStickerImage(),
+                  if (widget.pictureModel.isSelected) ...[
+                    _buildRotateHandle(),
+                    _buildCloseButton(),
+                    _buildResizeHandle(),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
