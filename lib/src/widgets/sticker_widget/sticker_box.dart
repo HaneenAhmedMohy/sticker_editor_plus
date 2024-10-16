@@ -91,15 +91,13 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
                   // widget.pictureModel.scale = tap.scale;
                 }
 
-                if ((widget.pictureModel.left + tap.focalPoint.dx - deltaOffset.dx) <= widget.boundWidth &&
-                    (widget.pictureModel.left + tap.focalPoint.dx - deltaOffset.dx) > 0) {
-                  widget.pictureModel.left += tap.focalPoint.dx - deltaOffset.dx;
-                }
-                if ((widget.pictureModel.top + tap.focalPoint.dy - deltaOffset.dy) < widget.boundHeight &&
-                    (widget.pictureModel.top + tap.focalPoint.dy - deltaOffset.dy) > 0) {
-                  widget.pictureModel.top += tap.focalPoint.dy - deltaOffset.dy;
-                }
+                final newLeft = (widget.pictureModel.left + tap.focalPointDelta.dx)
+                    .clamp(0.0, widget.boundWidth - 50 * widget.pictureModel.scale);
+                final newTop = (widget.pictureModel.top + tap.focalPointDelta.dy)
+                    .clamp(0.0, widget.boundHeight - 50 * widget.pictureModel.scale);
 
+                widget.pictureModel.left = newLeft;
+                widget.pictureModel.top = newTop;
                 deltaOffset = tap.focalPoint;
               });
 
