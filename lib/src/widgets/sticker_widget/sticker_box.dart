@@ -89,21 +89,24 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
             setState(() => widget.pictureModel.isSelected = !widget.pictureModel.isSelected);
           }
         },
-        child: Transform.scale(
-          scale: widget.pictureModel.scale,
-          child: Transform.rotate(
-            angle: widget.pictureModel.angle,
-            child: Stack(
-              children: [
-                _buildStickerImage(),
-                if (widget.pictureModel.isSelected) ...[
-                  _buildRotateHandle(),
-                  _buildCloseButton(),
-                  _buildResizeHandle(),
-                ],
-              ],
+        child: Stack(
+          alignment: Alignment.center, // Center alignment for easier control positioning
+          children: [
+            // Apply transformation only to the sticker
+            Transform.scale(
+              scale: widget.pictureModel.scale,
+              child: Transform.rotate(
+                angle: widget.pictureModel.angle,
+                child: _buildStickerImage(),
+              ),
             ),
-          ),
+            // Control icons (resize, rotate) are not transformed
+            if (widget.pictureModel.isSelected) ...[
+              _buildRotateHandle(),
+              _buildCloseButton(),
+              _buildResizeHandle(),
+            ],
+          ],
         ),
       ),
     );
@@ -118,6 +121,28 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
         child: widget.pictureModel.stringUrl.startsWith('http')
             ? Image.network(widget.pictureModel.stringUrl, height: 50, width: 50)
             : Image.asset(widget.pictureModel.stringUrl, height: 50, width: 50),
+      ),
+    );
+  }
+
+// The rotate handle remains fixed in size
+  Widget _buildRotateHandle() {
+    return Positioned(
+      bottom: -20, // Adjust the position to keep it outside the sticker
+      left: 0,
+      child: GestureDetector(
+        onPanUpdate: (details) {
+          setState(() => widget.pictureModel.angle += details.delta.dx * 0.01);
+        },
+        child: Container(
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.black, width: 1),
+            shape: BoxShape.circle,
+            color: Colors.white,
+          ),
+          child: widget.rotateIcon ?? const Icon(Icons.sync_alt, color: Colors.black, size: 12),
+        ),
       ),
     );
   }
@@ -146,31 +171,11 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
     );
   }
 
-  Widget _buildRotateHandle() {
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      child: GestureDetector(
-        onPanUpdate: (details) {
-          setState(() => widget.pictureModel.angle += details.delta.dx * 0.01);
-        },
-        child: Container(
-          padding: const EdgeInsets.all(10), // Increase the padding here
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.black, width: 1),
-            shape: BoxShape.circle,
-            color: Colors.white, // Make sure the control is visible
-          ),
-          child: widget.rotateIcon ?? const Icon(Icons.sync_alt, color: Colors.black, size: 12),
-        ),
-      ),
-    );
-  }
-
+// The resize handle remains fixed in size
   Widget _buildResizeHandle() {
     return Positioned(
-      bottom: 3,
-      right: 3,
+      bottom: -20, // Adjust the position to keep it outside the sticker
+      right: 0,
       child: GestureDetector(
         onPanUpdate: (details) {
           setState(() {
@@ -179,10 +184,10 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
           });
         },
         child: Container(
-          padding: const EdgeInsets.all(10), // Increase the padding here
+          padding: const EdgeInsets.all(5),
           decoration: BoxDecoration(
             border: Border.all(color: Colors.black, width: 1),
-            color: Colors.white, // Make sure the control is visible
+            color: Colors.white,
             shape: BoxShape.circle,
           ),
           child: widget.resizeIcon ?? const Icon(Icons.crop, color: Colors.black, size: 12),
