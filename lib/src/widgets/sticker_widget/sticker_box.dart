@@ -34,6 +34,7 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
   late double _lastScale;
   late double _lastRotation;
   final double _baseSize = 50.0; // Base size of the sticker
+  final double _controlSize = 24.0; // Size of control buttons
 
   @override
   void initState() {
@@ -77,7 +78,8 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
 
   void _handleResize(Offset delta) {
     setState(() {
-      final newScale = (widget.pictureModel.scale + delta.dx * 0.01).clamp(0.5, 5.0);
+      final sensitivity = 0.01; // Adjust this value to change resize sensitivity
+      final newScale = (widget.pictureModel.scale + delta.dx * sensitivity).clamp(0.5, 5.0);
       final scaleDiff = newScale - widget.pictureModel.scale;
       
       // Adjust position to keep the top-left corner fixed
@@ -108,21 +110,21 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
             setState(() => widget.pictureModel.isSelected = !widget.pictureModel.isSelected);
           }
         },
-        child: Transform.scale(
-          scale: widget.pictureModel.scale,
-          child: Transform.rotate(
-            angle: widget.pictureModel.angle,
-            child: Stack(
-              children: [
-                _buildStickerImage(),
-                if (widget.pictureModel.isSelected) ...[
-                  _buildRotateHandle(),
-                  _buildCloseButton(),
-                  _buildResizeHandle(),
-                ],
-              ],
+        child: Stack(
+          children: [
+            Transform.scale(
+              scale: widget.pictureModel.scale,
+              child: Transform.rotate(
+                angle: widget.pictureModel.angle,
+                child: _buildStickerImage(),
+              ),
             ),
-          ),
+            if (widget.pictureModel.isSelected) ...[
+              _buildRotateHandle(),
+              _buildCloseButton(),
+              _buildResizeHandle(),
+            ],
+          ],
         ),
       ),
     );
@@ -141,6 +143,22 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
     );
   }
 
+  Widget _buildControlButton(Widget child, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: _controlSize,
+        height: _controlSize,
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.black, width: 1),
+          shape: BoxShape.circle,
+          color: Colors.white,
+        ),
+        child: Center(child: child),
+      ),
+    );
+  }
+
   Widget _buildRotateHandle() {
     return Positioned(
       bottom: 0,
@@ -149,14 +167,9 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
         onPanUpdate: (details) {
           setState(() => widget.pictureModel.angle += details.delta.dx * 0.01);
         },
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.black, width: 1),
-            shape: BoxShape.circle,
-            color: Colors.white,
-          ),
-          child: widget.rotateIcon ?? const Icon(Icons.sync_alt, color: Colors.black, size: 12),
+        child: _buildControlButton(
+          widget.rotateIcon ?? const Icon(Icons.sync_alt, color: Colors.black, size: 16),
+          () {},
         ),
       ),
     );
@@ -164,42 +177,29 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
 
   Widget _buildCloseButton() {
     return Positioned(
-      top: 3,
-      right: 3,
-      child: GestureDetector(
-        onTap: () {
+      top: 0,
+      right: 0,
+      child: _buildControlButton(
+        widget.closeIcon ?? const Icon(Icons.close, color: Colors.black, size: 16),
+        () {
           if (widget.onCancel != null) {
             widget.onCancel!();
           }
           setState(() => widget.pictureModel.isSelected = false);
         },
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.black, width: 1),
-            shape: BoxShape.circle,
-            color: Colors.white,
-          ),
-          child: widget.closeIcon ?? const Icon(Icons.close, color: Colors.black, size: 12),
-        ),
       ),
     );
   }
 
   Widget _buildResizeHandle() {
     return Positioned(
-      bottom: 3,
-      right: 3,
+      bottom: 0,
+      right: 0,
       child: GestureDetector(
         onPanUpdate: (details) => _handleResize(details.delta),
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.black, width: 1),
-            color: Colors.white,
-            shape: BoxShape.circle,
-          ),
-          child: widget.resizeIcon ?? const Icon(Icons.crop, color: Colors.black, size: 12),
+        child: _buildControlButton(
+          widget.resizeIcon ?? const Icon(Icons.crop, color: Colors.black, size: 16),
+          () {},
         ),
       ),
     );
