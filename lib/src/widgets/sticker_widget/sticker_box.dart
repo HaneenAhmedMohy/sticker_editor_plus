@@ -33,6 +33,7 @@ class StickerEditingBox extends StatefulWidget {
 class _StickerEditingBoxState extends State<StickerEditingBox> {
   late double _lastScale;
   late double _lastRotation;
+  final double _baseSize = 50.0; // Base size of the sticker
 
   @override
   void initState() {
@@ -58,10 +59,11 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
       }
 
       // Handle movement
+      final scaledSize = _baseSize * widget.pictureModel.scale;
       final newLeft = (widget.pictureModel.left + details.focalPointDelta.dx)
-          .clamp(0.0, widget.boundWidth - 50 * widget.pictureModel.scale);
+          .clamp(0.0, widget.boundWidth - scaledSize);
       final newTop = (widget.pictureModel.top + details.focalPointDelta.dy)
-          .clamp(0.0, widget.boundHeight - 50 * widget.pictureModel.scale);
+          .clamp(0.0, widget.boundHeight - scaledSize);
 
       widget.pictureModel.left = newLeft;
       widget.pictureModel.top = newTop;
@@ -71,6 +73,23 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
   void _handleScaleEnd(ScaleEndDetails details) {
     _lastScale = widget.pictureModel.scale;
     _lastRotation = 0;
+  }
+
+  void _handleResize(Offset delta) {
+    setState(() {
+      final newScale = (widget.pictureModel.scale + delta.dx * 0.01).clamp(0.5, 5.0);
+      final scaleDiff = newScale - widget.pictureModel.scale;
+      
+      // Adjust position to keep the top-left corner fixed
+      widget.pictureModel.left -= (_baseSize * scaleDiff) / 2;
+      widget.pictureModel.top -= (_baseSize * scaleDiff) / 2;
+      
+      // Ensure the sticker stays within bounds
+      widget.pictureModel.left = widget.pictureModel.left.clamp(0.0, widget.boundWidth - _baseSize * newScale);
+      widget.pictureModel.top = widget.pictureModel.top.clamp(0.0, widget.boundHeight - _baseSize * newScale);
+      
+      widget.pictureModel.scale = newScale;
+    });
   }
 
   @override
@@ -116,8 +135,8 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
         color: widget.pictureModel.isSelected ? Colors.grey[600]! : Colors.transparent,
         padding: const EdgeInsets.all(4),
         child: widget.pictureModel.stringUrl.startsWith('http')
-            ? Image.network(widget.pictureModel.stringUrl, height: 50, width: 50)
-            : Image.asset(widget.pictureModel.stringUrl, height: 50, width: 50),
+            ? Image.network(widget.pictureModel.stringUrl, height: _baseSize, width: _baseSize)
+            : Image.asset(widget.pictureModel.stringUrl, height: _baseSize, width: _baseSize),
       ),
     );
   }
@@ -131,7 +150,7 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
           setState(() => widget.pictureModel.angle += details.delta.dx * 0.01);
         },
         child: Container(
-          padding: const EdgeInsets.all(2),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             border: Border.all(color: Colors.black, width: 1),
             shape: BoxShape.circle,
@@ -155,7 +174,7 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
           setState(() => widget.pictureModel.isSelected = false);
         },
         child: Container(
-          padding: const EdgeInsets.all(2),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             border: Border.all(color: Colors.black, width: 1),
             shape: BoxShape.circle,
@@ -172,14 +191,9 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
       bottom: 3,
       right: 3,
       child: GestureDetector(
-        onPanUpdate: (details) {
-          setState(() {
-            final newScale = (widget.pictureModel.scale + details.delta.dx * 0.01).clamp(0.5, 5.0);
-            widget.pictureModel.scale = newScale;
-          });
-        },
+        onPanUpdate: (details) => _handleResize(details.delta),
         child: Container(
-          padding: const EdgeInsets.all(2),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             border: Border.all(color: Colors.black, width: 1),
             color: Colors.white,
