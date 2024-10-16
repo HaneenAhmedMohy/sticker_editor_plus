@@ -88,14 +88,11 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
                   }
                 }
 
-                // Normalize movement by dividing the delta by the current scale
-                final normalizedDx = tap.focalPointDelta.dx / widget.pictureModel.scale;
-                final normalizedDy = tap.focalPointDelta.dy / widget.pictureModel.scale;
+                // Use the focal point delta directly for dragging, without scaling it down
+                final newLeft = (widget.pictureModel.left + tap.focalPointDelta.dx).clamp(0.0, widget.boundWidth - 50);
+                final newTop = (widget.pictureModel.top + tap.focalPointDelta.dy).clamp(0.0, widget.boundHeight - 50);
 
                 // Update position
-                final newLeft = (widget.pictureModel.left + normalizedDx).clamp(0.0, widget.boundWidth - 50);
-                final newTop = (widget.pictureModel.top + normalizedDy).clamp(0.0, widget.boundHeight - 50);
-
                 widget.pictureModel.left = newLeft;
                 widget.pictureModel.top = newTop;
               });
