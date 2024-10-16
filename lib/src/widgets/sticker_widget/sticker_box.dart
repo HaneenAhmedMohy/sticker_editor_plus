@@ -77,24 +77,24 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
               // var intialScale = tap.scale;
               setState(() {
                 if (tap.pointerCount == 2) {
+                  // Handle rotation
                   widget.pictureModel.angle += tap.rotation - widget.pictureModel.angle;
 
-                  print("onScaleUpdate ==>> ${tap.scale}");
-                  print(['object']);
-
+                  // Handle scaling
                   if ((tap.scale - lastScale!).isNegative) {
                     widget.pictureModel.scale -= 0.04;
                   } else {
                     widget.pictureModel.scale += 0.04;
                   }
-
-                  // widget.pictureModel.scale = tap.scale;
                 }
 
-                final newLeft = (widget.pictureModel.left + tap.focalPointDelta.dx)
-                    .clamp(0.0, widget.boundWidth - 50 );
-                final newTop = (widget.pictureModel.top + tap.focalPointDelta.dy)
-                    .clamp(0.0, widget.boundHeight - 50);
+                // Normalize movement by dividing the delta by the current scale
+                final normalizedDx = tap.focalPointDelta.dx / widget.pictureModel.scale;
+                final normalizedDy = tap.focalPointDelta.dy / widget.pictureModel.scale;
+
+                // Update position
+                final newLeft = (widget.pictureModel.left + normalizedDx).clamp(0.0, widget.boundWidth - 50);
+                final newTop = (widget.pictureModel.top + normalizedDy).clamp(0.0, widget.boundHeight - 50);
 
                 widget.pictureModel.left = newLeft;
                 widget.pictureModel.top = newTop;
