@@ -89,24 +89,21 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
             setState(() => widget.pictureModel.isSelected = !widget.pictureModel.isSelected);
           }
         },
-        child: Stack(
-          alignment: Alignment.center, // Center alignment for easier control positioning
-          children: [
-            // Apply transformation only to the sticker
-            Transform.scale(
-              scale: widget.pictureModel.scale,
-              child: Transform.rotate(
-                angle: widget.pictureModel.angle,
-                child: _buildStickerImage(),
-              ),
+        child: Transform.scale(
+          scale: widget.pictureModel.scale,
+          child: Transform.rotate(
+            angle: widget.pictureModel.angle,
+            child: Stack(
+              children: [
+                _buildStickerImage(),
+                if (widget.pictureModel.isSelected) ...[
+                  _buildRotateHandle(),
+                  _buildCloseButton(),
+                  _buildResizeHandle(),
+                ],
+              ],
             ),
-            // Control icons (resize, rotate) are not transformed
-            if (widget.pictureModel.isSelected) ...[
-              _buildRotateHandle(),
-              _buildCloseButton(),
-              _buildResizeHandle(),
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -125,17 +122,16 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
     );
   }
 
-// The rotate handle remains fixed in size
   Widget _buildRotateHandle() {
     return Positioned(
-      bottom: -20, // Adjust the position to keep it outside the sticker
+      bottom: 0,
       left: 0,
       child: GestureDetector(
         onPanUpdate: (details) {
           setState(() => widget.pictureModel.angle += details.delta.dx * 0.01);
         },
         child: Container(
-          padding: const EdgeInsets.all(5),
+          padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
             border: Border.all(color: Colors.black, width: 1),
             shape: BoxShape.circle,
@@ -171,20 +167,20 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
     );
   }
 
-// The resize handle remains fixed in size
   Widget _buildResizeHandle() {
     return Positioned(
-      bottom: -20, // Adjust the position to keep it outside the sticker
-      right: 0,
+      bottom: 3,
+      right: 3,
       child: GestureDetector(
-        onPanUpdate: (details) {
-          setState(() {
-            final newScale = (widget.pictureModel.scale + details.delta.dx * 0.01).clamp(0.5, 5.0);
-            widget.pictureModel.scale = newScale;
-          });
+        onPanUpdate: (tap) {
+          if (tap.delta.dx.isNegative && widget.pictureModel.scale > .5) {
+            setState(() => widget.pictureModel.scale -= 0.05);
+          } else if (!tap.delta.dx.isNegative && widget.pictureModel.scale < 5) {
+            setState(() => widget.pictureModel.scale += 0.05);
+          }
         },
         child: Container(
-          padding: const EdgeInsets.all(5),
+          padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
             border: Border.all(color: Colors.black, width: 1),
             color: Colors.white,
