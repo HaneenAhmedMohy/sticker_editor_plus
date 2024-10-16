@@ -72,37 +72,30 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
               setState(() => deltaOffset = const Offset(0, 0));
             },
             onScaleUpdate: (tap) {
-              if (widget.viewOnly) {
-                return;
-              }
+              if (widget.viewOnly) return;
 
-              // var intialScale = tap.scale;
               setState(() {
+                // Handle rotation when using two fingers
                 if (tap.pointerCount == 2) {
                   widget.pictureModel.angle += tap.rotation - widget.pictureModel.angle;
 
-                  print("onScaleUpdate ==>> ${tap.scale}");
-                  print(['object']);
-
-                  if ((tap.scale - lastScale!).isNegative) {
-                    widget.pictureModel.scale -= 0.04;
-                  } else {
-                    widget.pictureModel.scale += 0.04;
-                  }
-
-                  // widget.pictureModel.scale = tap.scale;
+                  // Handle scaling
+                  widget.pictureModel.scale = (tap.scale * lastScale!).clamp(0.5, 5.0);
                 }
 
-                if ((widget.pictureModel.left + tap.focalPoint.dx - deltaOffset.dx) <= widget.boundWidth &&
-                    (widget.pictureModel.left + tap.focalPoint.dx - deltaOffset.dx) > 0) {
-                  widget.pictureModel.left += tap.focalPoint.dx - deltaOffset.dx;
-                }
-                if ((widget.pictureModel.top + tap.focalPoint.dy - deltaOffset.dy) < widget.boundHeight &&
-                    (widget.pictureModel.top + tap.focalPoint.dy - deltaOffset.dy) > 0) {
-                  widget.pictureModel.top += tap.focalPoint.dy - deltaOffset.dy;
+                // Calculate the new position, limiting it within the boundaries
+                final newLeft = (widget.pictureModel.left + tap.focalPoint.dx - deltaOffset.dx)
+                    .clamp(0.0, widget.boundWidth - 50 * widget.pictureModel.scale);
+                final newTop = (widget.pictureModel.top + tap.focalPoint.dy - deltaOffset.dy)
+                    .clamp(0.0, widget.boundHeight - 50 * widget.pictureModel.scale);
+
+                // Only update the position if there’s a significant change to prevent jitter
+                if ((newLeft - widget.pictureModel.left).abs() > 1.0 || (newTop - widget.pictureModel.top).abs() > 1.0) {
+                  widget.pictureModel.left = newLeft;
+                  widget.pictureModel.top = newTop;
                 }
 
-                deltaOffset = tap.focalPoint;
+                deltaOffset = tap.focalPoint; // Update the deltaOffset for smoother transitions
               });
 
               lastScale = tap.scale;
