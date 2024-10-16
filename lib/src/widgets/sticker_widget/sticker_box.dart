@@ -68,9 +68,7 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
         child: Transform.rotate(
           angle: widget.pictureModel.angle,
           child: GestureDetector(
-            onScaleStart: (tap) {
-              setState(() => deltaOffset = const Offset(0, 0));
-            },
+            onScaleStart: (_) => lastScale = widget.pictureModel.scale,
             onScaleUpdate: (tap) {
               if (widget.viewOnly) {
                 return;
@@ -79,8 +77,7 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
               // var intialScale = tap.scale;
               setState(() {
                 if (tap.pointerCount == 2) {
-                  widget.pictureModel.angle +=
-                      tap.rotation - widget.pictureModel.angle;
+                  widget.pictureModel.angle += tap.rotation - widget.pictureModel.angle;
 
                   print("onScaleUpdate ==>> ${tap.scale}");
                   print(['object']);
@@ -94,25 +91,12 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
                   // widget.pictureModel.scale = tap.scale;
                 }
 
-                if ((widget.pictureModel.left +
-                            tap.focalPoint.dx -
-                            deltaOffset.dx) <=
-                        widget.boundWidth &&
-                    (widget.pictureModel.left +
-                            tap.focalPoint.dx -
-                            deltaOffset.dx) >
-                        0) {
-                  widget.pictureModel.left +=
-                      tap.focalPoint.dx - deltaOffset.dx;
+                if ((widget.pictureModel.left + tap.focalPoint.dx - deltaOffset.dx) <= widget.boundWidth &&
+                    (widget.pictureModel.left + tap.focalPoint.dx - deltaOffset.dx) > 0) {
+                  widget.pictureModel.left += tap.focalPoint.dx - deltaOffset.dx;
                 }
-                if ((widget.pictureModel.top +
-                            tap.focalPoint.dy -
-                            deltaOffset.dy) <
-                        widget.boundHeight &&
-                    (widget.pictureModel.top +
-                            tap.focalPoint.dy -
-                            deltaOffset.dy) >
-                        0) {
+                if ((widget.pictureModel.top + tap.focalPoint.dy - deltaOffset.dy) < widget.boundHeight &&
+                    (widget.pictureModel.top + tap.focalPoint.dy - deltaOffset.dy) > 0) {
                   widget.pictureModel.top += tap.focalPoint.dy - deltaOffset.dy;
                 }
 
@@ -137,15 +121,11 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
                 Padding(
                   padding: const EdgeInsets.all(10),
                   child: DottedBorder(
-                    color: widget.pictureModel.isSelected
-                        ? Colors.grey[600]!
-                        : Colors.transparent,
+                    color: widget.pictureModel.isSelected ? Colors.grey[600]! : Colors.transparent,
                     padding: const EdgeInsets.all(4),
                     child: widget.pictureModel.stringUrl.startsWith('http')
-                        ? Image.network(widget.pictureModel.stringUrl,
-                            height: 50, width: 50)
-                        : Image.asset(widget.pictureModel.stringUrl,
-                            height: 50, width: 50),
+                        ? Image.network(widget.pictureModel.stringUrl, height: 50, width: 50)
+                        : Image.asset(widget.pictureModel.stringUrl, height: 50, width: 50),
                   ),
                 ),
                 Positioned(
@@ -163,13 +143,8 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
                         ? Container(
                             padding: const EdgeInsets.all(2),
                             decoration: BoxDecoration(
-                                border:
-                                    Border.all(color: Colors.black, width: 1),
-                                shape: BoxShape.circle,
-                                color: Colors.white),
-                            child: widget.rotateIcon ??
-                                const Icon(Icons.sync_alt,
-                                    color: Colors.black, size: 12),
+                                border: Border.all(color: Colors.black, width: 1), shape: BoxShape.circle, color: Colors.white),
+                            child: widget.rotateIcon ?? const Icon(Icons.sync_alt, color: Colors.black, size: 12),
                           )
                         : Container(),
                   ),
@@ -188,13 +163,8 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
                         ? Container(
                             padding: const EdgeInsets.all(2),
                             decoration: BoxDecoration(
-                                border:
-                                    Border.all(color: Colors.black, width: 1),
-                                shape: BoxShape.circle,
-                                color: Colors.white),
-                            child: widget.closeIcon ??
-                                const Icon(Icons.close,
-                                    color: Colors.black, size: 12),
+                                border: Border.all(color: Colors.black, width: 1), shape: BoxShape.circle, color: Colors.white),
+                            child: widget.closeIcon ?? const Icon(Icons.close, color: Colors.black, size: 12),
                           )
                         : Container(),
                   ),
@@ -204,11 +174,9 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
                   right: 3,
                   child: GestureDetector(
                       onPanUpdate: (tap) {
-                        if (tap.delta.dx.isNegative &&
-                            widget.pictureModel.scale > .5) {
+                        if (tap.delta.dx.isNegative && widget.pictureModel.scale > .5) {
                           setState(() => widget.pictureModel.scale -= 0.05);
-                        } else if (!tap.delta.dx.isNegative &&
-                            widget.pictureModel.scale < 5) {
+                        } else if (!tap.delta.dx.isNegative && widget.pictureModel.scale < 5) {
                           setState(() => widget.pictureModel.scale += 0.05);
                         }
                       },
@@ -216,13 +184,8 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
                           ? Container(
                               padding: const EdgeInsets.all(2),
                               decoration: BoxDecoration(
-                                  border:
-                                      Border.all(color: Colors.black, width: 1),
-                                  color: Colors.white,
-                                  shape: BoxShape.circle),
-                              child: widget.resizeIcon ??
-                                  const Icon(Icons.crop,
-                                      color: Colors.black, size: 12))
+                                  border: Border.all(color: Colors.black, width: 1), color: Colors.white, shape: BoxShape.circle),
+                              child: widget.resizeIcon ?? const Icon(Icons.crop, color: Colors.black, size: 12))
                           : Container()),
                 ),
               ],
