@@ -1,6 +1,7 @@
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
 import 'package:sticker_editor_plus/src/model/picture_model.dart';
+import 'dart:math' as math;
 
 class StickerEditingBox extends StatefulWidget {
   final double boundWidth;
@@ -96,6 +97,8 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
 
   @override
   Widget build(BuildContext context) {
+    final scaledSize = _baseSize * widget.pictureModel.scale;
+
     return Positioned(
       top: widget.pictureModel.top,
       left: widget.pictureModel.left,
@@ -110,21 +113,22 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
             setState(() => widget.pictureModel.isSelected = !widget.pictureModel.isSelected);
           }
         },
-        child: Stack(
-          children: [
-            Transform.scale(
-              scale: widget.pictureModel.scale,
-              child: Transform.rotate(
-                angle: widget.pictureModel.angle,
-                child: _buildStickerImage(),
-              ),
+        child: Transform.rotate(
+          angle: widget.pictureModel.angle,
+          child: SizedBox(
+            width: scaledSize,
+            height: scaledSize,
+            child: Stack(
+              children: [
+                _buildStickerImage(),
+                if (widget.pictureModel.isSelected) ...[
+                  _buildRotateHandle(),
+                  _buildCloseButton(),
+                  _buildResizeHandle(),
+                ],
+              ],
             ),
-            if (widget.pictureModel.isSelected) ...[
-              _buildRotateHandle(),
-              _buildCloseButton(),
-              _buildResizeHandle(),
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -137,8 +141,8 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
         color: widget.pictureModel.isSelected ? Colors.grey[600]! : Colors.transparent,
         padding: const EdgeInsets.all(4),
         child: widget.pictureModel.stringUrl.startsWith('http')
-            ? Image.network(widget.pictureModel.stringUrl, height: _baseSize, width: _baseSize)
-            : Image.asset(widget.pictureModel.stringUrl, height: _baseSize, width: _baseSize),
+            ? Image.network(widget.pictureModel.stringUrl, fit: BoxFit.contain)
+            : Image.asset(widget.pictureModel.stringUrl, fit: BoxFit.contain),
       ),
     );
   }
@@ -161,11 +165,16 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
 
   Widget _buildRotateHandle() {
     return Positioned(
-      bottom: 0,
-      left: 0,
+      bottom: -_controlSize / 2,
+      left: -_controlSize / 2,
       child: GestureDetector(
         onPanUpdate: (details) {
-          setState(() => widget.pictureModel.angle += details.delta.dx * 0.01);
+          final center = Offset(_baseSize * widget.pictureModel.scale / 2, _baseSize * widget.pictureModel.scale / 2);
+          final startAngle = (details.localPosition - center).direction;
+          setState(() {
+            final endAngle = (details.localPosition + details.delta - center).direction;
+            widget.pictureModel.angle += endAngle - startAngle;
+          });
         },
         child: _buildControlButton(
           widget.rotateIcon ?? const Icon(Icons.sync_alt, color: Colors.black, size: 16),
@@ -177,8 +186,8 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
 
   Widget _buildCloseButton() {
     return Positioned(
-      top: 0,
-      right: 0,
+      top: -_controlSize / 2,
+      right: -_controlSize / 2,
       child: _buildControlButton(
         widget.closeIcon ?? const Icon(Icons.close, color: Colors.black, size: 16),
         () {
@@ -193,10 +202,31 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
 
   Widget _buildResizeHandle() {
     return Positioned(
-      bottom: 0,
-      right: 0,
+      bottom: -_controlSize / 2,
+      right: -_controlSize / 2,
       child: GestureDetector(
-        onPanUpdate: (details) => _handleResize(details.delta),
+        onPanUpdate: (details) {
+          final localPosition = details.localPosition;
+          final center = Offset(_baseSize * widget.pictureModel.scale / 2, _baseSize * widget.pictureModel.scale / 2);
+          final angle = (localPosition - center).direction;
+          final distance = (localPosition - center).distance;
+          
+          setState(() {
+            final newScale = (distance / (_baseSize / 2)).clamp(0.5, 5.0);
+            widget.pictureModel.scale = newScale;
+            
+            // Adjust position to keep the center fixed
+            final newSize = _baseSize * newScale;
+            widget.pictureModel.left += ((_baseSize * _lastScale) - newSize) / 2;
+            widget.pictureModel.top += ((_baseSize * _lastScale) - newSize) / 2;
+            
+            // Ensure the sticker stays within bounds
+            widget.pictureModel.left = widget.pictureModel.left.clamp(0.0, widget.boundWidth - newSize);
+            widget.pictureModel.top = widget.pictureModel.top.clamp(0.0, widget.boundHeight - newSize);
+            
+            _lastScale = newScale;
+          });
+        },
         child: _buildControlButton(
           widget.resizeIcon ?? const Icon(Icons.crop, color: Colors.black, size: 16),
           () {},
