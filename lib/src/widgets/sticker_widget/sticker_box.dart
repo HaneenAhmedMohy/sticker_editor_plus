@@ -98,10 +98,10 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
 
                 widget.pictureModel.left = newLeft;
                 widget.pictureModel.top = newTop;
-                deltaOffset = tap.focalPoint;
+                // deltaOffset = tap.focalPoint;
               });
 
-              lastScale = tap.scale;
+              // lastScale = tap.scale;
             },
             onTap: () {
               if (widget.onTap == null) {
