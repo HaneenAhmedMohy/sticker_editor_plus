@@ -32,6 +32,8 @@ class StickerEditingBox extends StatefulWidget {
 
 class _StickerEditingBoxState extends State<StickerEditingBox> {
   double? lastScale;
+  Offset? lastFocalPoint;
+  bool isDragging = false;
 
   @override
   void initState() {
@@ -39,135 +41,156 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
     super.initState();
   }
 
+  void _handleDrag(Offset delta) {
+    if (widget.viewOnly) return;
+
+    setState(() {
+      // Calculate new positions
+      double newLeft = widget.pictureModel.left + delta.dx;
+      double newTop = widget.pictureModel.top + delta.dy;
+
+      // Calculate boundaries considering the scaled size
+      double scaledWidth = 50 * widget.pictureModel.scale;
+      double scaledHeight = 50 * widget.pictureModel.scale;
+
+      // Clamp the positions
+      newLeft = newLeft.clamp(0.0, widget.boundWidth - scaledWidth);
+      newTop = newTop.clamp(0.0, widget.boundHeight - scaledHeight);
+
+      // Update the position
+      widget.pictureModel.left = newLeft;
+      widget.pictureModel.top = newTop;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Positioned(
       top: widget.pictureModel.top,
       left: widget.pictureModel.left,
-      child: Transform.scale(
-        scale: widget.pictureModel.scale,
-        child: Transform.rotate(
-          angle: widget.pictureModel.angle,
-          child: GestureDetector(
-            onScaleStart: (_) => lastScale = widget.pictureModel.scale,
-            onScaleUpdate: (tap) {
-              if (widget.viewOnly) return;
+      child: GestureDetector(
+        onPanStart: (details) {
+          isDragging = true;
+          lastFocalPoint = details.localPosition;
+        },
+        onPanUpdate: (details) {
+          if (isDragging) {
+            final delta = details.delta;
+            _handleDrag(delta);
+          }
+        },
+        onPanEnd: (details) {
+          isDragging = false;
+          lastFocalPoint = null;
+        },
+        child: Transform.scale(
+          scale: widget.pictureModel.scale,
+          child: Transform.rotate(
+            angle: widget.pictureModel.angle,
+            child: GestureDetector(
+              onScaleStart: (details) {
+                lastScale = widget.pictureModel.scale;
+                lastFocalPoint = details.localFocalPoint;
+              },
+              onScaleUpdate: (details) {
+                if (widget.viewOnly) return;
 
-              setState(() {
-                if (tap.pointerCount == 2) {
-                  // Handle rotation
-                  widget.pictureModel.angle += tap.rotation - widget.pictureModel.angle;
+                setState(() {
+                  if (details.pointerCount == 2) {
+                    // Handle rotation
+                    widget.pictureModel.angle += details.rotation;
 
-                  // Handle scaling
-                  if ((tap.scale - lastScale!).isNegative) {
-                    widget.pictureModel.scale -= 0.04;
-                  } else {
-                    widget.pictureModel.scale += 0.04;
+                    // Handle scaling
+                    double newScale = lastScale! * details.scale;
+                    // Clamp the scale between 0.5 and 5.0
+                    widget.pictureModel.scale = newScale.clamp(0.5, 5.0);
                   }
+                });
+              },
+              onTap: () {
+                if (widget.onTap == null) {
+                  setState(() => widget.pictureModel.isSelected = !widget.pictureModel.isSelected);
                 } else {
-                  // Adjust movement speed based on scale
-                  final movementFactor = 1 / widget.pictureModel.scale;
-                  
-                  // Calculate new position with scale compensation
-                  final newLeft = (widget.pictureModel.left + (tap.focalPointDelta.dx * movementFactor))
-                      .clamp(0.0, widget.boundWidth - (50 * widget.pictureModel.scale));
-                  
-                  final newTop = (widget.pictureModel.top + (tap.focalPointDelta.dy * movementFactor))
-                      .clamp(0.0, widget.boundHeight - (50 * widget.pictureModel.scale));
-
-                  // Update position
-                  widget.pictureModel.left = newLeft;
-                  widget.pictureModel.top = newTop;
+                  widget.onTap!();
                 }
-              });
-
-              lastScale = tap.scale;
-            },
-            onTap: () {
-              if (widget.onTap == null) {
-                setState(() => widget.pictureModel.isSelected = !widget.pictureModel.isSelected);
-              } else {
-                widget.onTap!();
-              }
-            },
-            child: Stack(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: DottedBorder(
-                    color: widget.pictureModel.isSelected ? Colors.grey[600]! : Colors.transparent,
-                    padding: const EdgeInsets.all(4),
-                    child: widget.pictureModel.stringUrl.startsWith('http')
-                        ? Image.network(widget.pictureModel.stringUrl, height: 50, width: 50)
-                        : Image.asset(widget.pictureModel.stringUrl, height: 50, width: 50),
-                  ),
-                ),
-                if (widget.pictureModel.isSelected) ...[
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    child: GestureDetector(
-                      onPanUpdate: (tap) {
-                        setState(() {
-                          widget.pictureModel.angle += tap.delta.dx.isNegative ? 0.05 : -0.05;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.black, width: 1),
-                          shape: BoxShape.circle,
-                          color: Colors.white
-                        ),
-                        child: widget.rotateIcon ?? const Icon(Icons.sync_alt, color: Colors.black, size: 12),
-                      ),
+              },
+              child: Stack(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: DottedBorder(
+                      color: widget.pictureModel.isSelected ? Colors.grey[600]! : Colors.transparent,
+                      padding: const EdgeInsets.all(4),
+                      child: widget.pictureModel.stringUrl.startsWith('http')
+                          ? Image.network(widget.pictureModel.stringUrl, height: 50, width: 50)
+                          : Image.asset(widget.pictureModel.stringUrl, height: 50, width: 50),
                     ),
                   ),
-                  Positioned(
-                    top: 3,
-                    right: 3,
-                    child: InkWell(
-                      onTap: () {
-                        if (widget.onCancel != null) widget.onCancel!();
-                        setState(() => widget.pictureModel.isSelected = false);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.black, width: 1),
-                          shape: BoxShape.circle,
-                          color: Colors.white
+                  if (widget.pictureModel.isSelected) ...[
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      child: GestureDetector(
+                        onPanUpdate: (details) {
+                          setState(() {
+                            widget.pictureModel.angle += details.delta.dx.isNegative ? 0.05 : -0.05;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.black, width: 1),
+                            shape: BoxShape.circle,
+                            color: Colors.white
+                          ),
+                          child: widget.rotateIcon ?? const Icon(Icons.sync_alt, color: Colors.black, size: 12),
                         ),
-                        child: widget.closeIcon ?? const Icon(Icons.close, color: Colors.black, size: 12),
                       ),
                     ),
-                  ),
-                  Positioned(
-                    bottom: 3,
-                    right: 3,
-                    child: GestureDetector(
-                      onPanUpdate: (tap) {
-                        setState(() {
-                          if (tap.delta.dx.isNegative && widget.pictureModel.scale > .5) {
-                            widget.pictureModel.scale -= 0.05;
-                          } else if (!tap.delta.dx.isNegative && widget.pictureModel.scale < 5) {
-                            widget.pictureModel.scale += 0.05;
-                          }
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.black, width: 1),
-                          color: Colors.white,
-                          shape: BoxShape.circle
+                    Positioned(
+                      top: 3,
+                      right: 3,
+                      child: InkWell(
+                        onTap: () {
+                          if (widget.onCancel != null) widget.onCancel!();
+                          setState(() => widget.pictureModel.isSelected = false);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.black, width: 1),
+                            shape: BoxShape.circle,
+                            color: Colors.white
+                          ),
+                          child: widget.closeIcon ?? const Icon(Icons.close, color: Colors.black, size: 12),
                         ),
-                        child: widget.resizeIcon ?? const Icon(Icons.crop, color: Colors.black, size: 12),
                       ),
                     ),
-                  ),
+                    Positioned(
+                      bottom: 3,
+                      right: 3,
+                      child: GestureDetector(
+                        onPanUpdate: (details) {
+                          setState(() {
+                            double scaleDelta = details.delta.dx * 0.01;
+                            double newScale = widget.pictureModel.scale + scaleDelta;
+                            widget.pictureModel.scale = newScale.clamp(0.5, 5.0);
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.black, width: 1),
+                            color: Colors.white,
+                            shape: BoxShape.circle
+                          ),
+                          child: widget.resizeIcon ?? const Icon(Icons.crop, color: Colors.black, size: 12),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
