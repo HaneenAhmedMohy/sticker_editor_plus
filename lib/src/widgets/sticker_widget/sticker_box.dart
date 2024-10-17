@@ -32,6 +32,7 @@ class StickerEditingBox extends StatefulWidget {
 
 class _StickerEditingBoxState extends State<StickerEditingBox> {
   double? lastScale;
+  Offset deltaOffset = const Offset(0, 0);
 
   @override
   void initState() {
@@ -49,51 +50,42 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
         child: Transform.rotate(
           angle: widget.pictureModel.angle,
           child: GestureDetector(
-            onScaleStart: (_) => lastScale = widget.pictureModel.scale,
+            onScaleStart: (tap) {
+              lastScale = widget.pictureModel.scale;
+              setState(() => deltaOffset =  Offset(tap.focalPoint.dx, tap.focalPoint.dy));
+            },
             onScaleUpdate: (tap) {
-              if (widget.viewOnly) return;
+              if (widget.viewOnly) {
+                return;
+              }
 
+              // var intialScale = tap.scale;
               setState(() {
                 if (tap.pointerCount == 2) {
-                  // Handle rotation
                   widget.pictureModel.angle += tap.rotation - widget.pictureModel.angle;
 
-                  // Handle scaling
+                  print("onScaleUpdate ==>> ${tap.scale}");
+                  print(['object']);
+
                   if ((tap.scale - lastScale!).isNegative) {
                     widget.pictureModel.scale -= 0.04;
                   } else {
                     widget.pictureModel.scale += 0.04;
                   }
-                } else {
-                  // // Adjust movement speed based on scale
-                  // final movementFactor = 1 / widget.pictureModel.scale;
 
-                  // // Calculate new position with scale compensation
-                  // final newLeft = (widget.pictureModel.left + (tap.focalPointDelta.dx * movementFactor))
-                  //     .clamp(0.0, widget.boundWidth - (50 * widget.pictureModel.scale));
-
-                  // final newTop = (widget.pictureModel.top + (tap.focalPointDelta.dy * movementFactor))
-                  //     .clamp(0.0, widget.boundHeight - (50 * widget.pictureModel.scale));
-
-                  // // Update position
-                  // widget.pictureModel.left = newLeft;
-                  // widget.pictureModel.top = newTop;
-
-                  double newLeft = widget.pictureModel.left + tap.focalPointDelta.dx;
-                  double newTop = widget.pictureModel.top + tap.focalPointDelta.dy;
-
-                  // Calculate boundaries considering the scaled size
-                  double scaledWidth = 50 * widget.pictureModel.scale;
-                  double scaledHeight = 50 * widget.pictureModel.scale;
-
-                  // Clamp the positions
-                  newLeft = newLeft.clamp(0.0, widget.boundWidth - scaledWidth);
-                  newTop = newTop.clamp(0.0, widget.boundHeight - scaledHeight);
-
-                  // Update the position
-                  widget.pictureModel.left = newLeft;
-                  widget.pictureModel.top = newTop;
+                  // widget.pictureModel.scale = tap.scale;
                 }
+
+                if ((widget.pictureModel.left + tap.focalPoint.dx - deltaOffset.dx) <= widget.boundWidth &&
+                    (widget.pictureModel.left + tap.focalPoint.dx - deltaOffset.dx) > 0) {
+                  widget.pictureModel.left += tap.focalPoint.dx - deltaOffset.dx;
+                }
+                if ((widget.pictureModel.top + tap.focalPoint.dy - deltaOffset.dy) < widget.boundHeight &&
+                    (widget.pictureModel.top + tap.focalPoint.dy - deltaOffset.dy) > 0) {
+                  widget.pictureModel.top += tap.focalPoint.dy - deltaOffset.dy;
+                }
+
+                deltaOffset = tap.focalPoint;
               });
 
               lastScale = tap.scale;
