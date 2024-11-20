@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
 import 'package:sticker_editor_plus/src/model/picture_model.dart';
@@ -33,11 +35,45 @@ class StickerEditingBox extends StatefulWidget {
 class _StickerEditingBoxState extends State<StickerEditingBox> {
   double? lastScale;
   Offset deltaOffset = const Offset(0, 0);
+  double? _initialAngle;
+  Offset? _rotationStartPoint;
 
   @override
   void initState() {
     lastScale = widget.pictureModel.scale;
     super.initState();
+  }
+
+  double _getAngle(Offset start, Offset current) {
+    final dx = current.dx - start.dx;
+    final dy = current.dy - start.dy;
+    return atan2(dy, dx);
+  }
+
+  // Handle rotation start
+  void _handleRotationStart(DragStartDetails details) {
+    _rotationStartPoint = details.localPosition;
+    _initialAngle = widget.pictureModel.angle;
+  }
+
+  void _handleRotationUpdate(DragUpdateDetails details) {
+    if (_rotationStartPoint == null || _initialAngle == null) return;
+
+    setState(() {
+      // Calculate the angle change based on the initial point and current point
+      final newAngle = _getAngle(_rotationStartPoint!, details.localPosition);
+      // Apply the rotation change relative to the initial angle
+      // Ensure smooth continuous rotation
+      final deltaAngle = newAngle - _getAngle(_rotationStartPoint!, _rotationStartPoint!);
+
+      // Update the angle smoothly
+      widget.pictureModel.angle = _initialAngle! + deltaAngle;
+    });
+  }
+
+  // Handle rotation end
+  void _handleRotationEnd(DragEndDetails details) {
+    _rotationStartPoint = null;
   }
 
   @override
@@ -52,7 +88,7 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
           child: GestureDetector(
             onScaleStart: (tap) {
               lastScale = widget.pictureModel.scale;
-              setState(() => deltaOffset =  Offset(tap.focalPoint.dx, tap.focalPoint.dy));
+              setState(() => deltaOffset = Offset(tap.focalPoint.dx, tap.focalPoint.dy));
             },
             onScaleUpdate: (tap) {
               if (widget.viewOnly) {
@@ -62,7 +98,7 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
               // var intialScale = tap.scale;
               setState(() {
                 if (tap.pointerCount == 2) {
-                  widget.pictureModel.angle += tap.rotation - widget.pictureModel.angle;
+                  // widget.pictureModel.angle += tap.rotation;
 
                   print("onScaleUpdate ==>> ${tap.scale}");
                   print(['object']);
@@ -114,11 +150,9 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
                     bottom: 0,
                     left: 0,
                     child: GestureDetector(
-                      onPanUpdate: (tap) {
-                        setState(() {
-                          widget.pictureModel.angle += tap.delta.dx.isNegative ? 0.05 : -0.05;
-                        });
-                      },
+                      onPanStart: _handleRotationStart,
+                      onPanUpdate: _handleRotationUpdate,
+                      onPanEnd: _handleRotationEnd,
                       child: Container(
                         padding: const EdgeInsets.all(2),
                         decoration: BoxDecoration(
