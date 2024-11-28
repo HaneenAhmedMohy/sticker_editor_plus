@@ -183,10 +183,13 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
                     child: GestureDetector(
                       onPanUpdate: (tap) {
                         setState(() {
-                          if (tap.delta.dx.isNegative && widget.pictureModel.scale > .5) {
-                            widget.pictureModel.scale -= 0.05;
-                          } else if (!tap.delta.dx.isNegative && widget.pictureModel.scale < 5) {
-                            widget.pictureModel.scale += 0.05;
+                          double maxScale = 1.4;
+
+                          // Adjust the scale within the allowed range
+                          if (tap.delta.dx.isNegative && widget.pictureModel.scale > 0.5) {
+                            widget.pictureModel.scale = max(widget.pictureModel.scale - 0.05, 0.5);
+                          } else if (!tap.delta.dx.isNegative && widget.pictureModel.scale < maxScale) {
+                            widget.pictureModel.scale = min(widget.pictureModel.scale + 0.05, maxScale);
                           }
                         });
                       },
