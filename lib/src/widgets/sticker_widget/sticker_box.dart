@@ -50,24 +50,17 @@ class _StickerEditingBoxState extends State<StickerEditingBox> {
     return atan2(dy, dx);
   }
 
-  // Handle rotation start
   void _handleRotationStart(DragStartDetails details) {
     _rotationStartPoint = details.localPosition;
-    _initialAngle = widget.pictureModel.angle;
+    _initialAngle = widget.pictureModel.angle - _getAngle(Offset.zero, _rotationStartPoint!);
   }
 
   void _handleRotationUpdate(DragUpdateDetails details) {
     if (_rotationStartPoint == null || _initialAngle == null) return;
 
     setState(() {
-      // Calculate the angle change based on the initial point and current point
-      final newAngle = _getAngle(_rotationStartPoint!, details.localPosition);
-      // Apply the rotation change relative to the initial angle
-      // Ensure smooth continuous rotation
-      final deltaAngle = newAngle - _getAngle(_rotationStartPoint!, _rotationStartPoint!);
-
-      // Update the angle smoothly
-      widget.pictureModel.angle = _initialAngle! + deltaAngle;
+      final newAngle = _getAngle(Offset.zero, details.localPosition);
+      widget.pictureModel.angle = _initialAngle! + newAngle;
     });
   }
 
