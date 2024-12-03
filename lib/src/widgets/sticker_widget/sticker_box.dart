@@ -14,19 +14,21 @@ class StickerEditingBox extends StatefulWidget {
   final Icon? resizeIcon;
   final Icon? rotateIcon;
   final Icon? closeIcon;
+  final String? stickerName;
 
-  const StickerEditingBox({
-    Key? key,
-    required this.boundWidth,
-    required this.boundHeight,
-    required this.pictureModel,
-    this.viewOnly = false,
-    this.resizeIcon,
-    this.rotateIcon,
-    this.closeIcon,
-    this.onTap,
-    this.onCancel,
-  }) : super(key: key);
+  const StickerEditingBox(
+      {Key? key,
+      required this.boundWidth,
+      required this.boundHeight,
+      required this.pictureModel,
+      this.viewOnly = false,
+      this.resizeIcon,
+      this.rotateIcon,
+      this.closeIcon,
+      this.onTap,
+      this.onCancel,
+      this.stickerName})
+      : super(key: key);
 
   @override
   _StickerEditingBoxState createState() => _StickerEditingBoxState();
